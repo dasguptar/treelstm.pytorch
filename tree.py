@@ -16,10 +16,12 @@ class Tree(object):
         count = 1
         for i in xrange(self.num_children):
             count += self.children[i].size()
-        self._size = size
+        self._size = count
         return self._size
 
     def depth(self):
+        if getattr(self,'_depth'):
+            return self._depth
         count = 0
         if self.num_children>0:
             for i in xrange(self.num_children):
@@ -27,4 +29,5 @@ class Tree(object):
                 if child_depth>count:
                     count = child_depth
             count += 1
-        return count
+        self._depth = count
+        return self._depth

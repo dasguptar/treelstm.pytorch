@@ -4,8 +4,6 @@ Downloads the following:
 - Stanford POS tagger
 - Glove vectors
 - SICK dataset (semantic relatedness task)
-- Stanford Sentiment Treebank (sentiment classification task)
-
 """
 
 from __future__ import print_function

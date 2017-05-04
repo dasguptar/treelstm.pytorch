@@ -35,8 +35,8 @@ class ChildSumTreeLSTM(nn.Module):
         u = F.tanh(self.ux(inputs)+self.uh(child_h_sum))
 
         # add extra singleton dimension
-        fx = F.torch.unsqueeze(self.ix(inputs),1)
-        f = F.torch.cat([self.ih(child_hi)+fx for child_hi in child_h], 0)
+        fx = F.torch.unsqueeze(self.fx(inputs),1)
+        f = F.torch.cat([self.fh(child_hi)+fx for child_hi in child_h], 0)
         f = F.sigmoid(f)
         # removing extra singleton dimension
         f = F.torch.unsqueeze(f,1)

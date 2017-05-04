@@ -33,6 +33,9 @@ def main():
     args.input_dim, args.mem_dim = 300, 150
     args.hidden_dim, args.num_classes = 50, 5
     args.cuda = args.cuda and torch.cuda.is_available()
+    if args.sparse and args.wd!=0:
+        print('Sparsity and weight decay are incompatible, pick one!')
+        exit()
     print(args)
     torch.manual_seed(args.seed)
     if args.cuda:
@@ -80,8 +83,8 @@ def main():
     model = SimilarityTreeLSTM(
                 args.cuda, vocab.size(),
                 args.input_dim, args.mem_dim,
-                args.hidden_dim, args.num_classes
-            )
+                args.hidden_dim, args.num_classes,
+                args.sparse)
     criterion = nn.KLDivLoss()
     if args.cuda:
         model.cuda(), criterion.cuda()
@@ -89,6 +92,8 @@ def main():
         optimizer   = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.wd)
     elif args.optim=='adagrad':
         optimizer   = optim.Adagrad(model.parameters(), lr=args.lr, weight_decay=args.wd)
+    elif args.optim=='sgd':
+        optimizer   = optim.SGD(model.parameters(), lr=args.lr, weight_decay=args.wd)
     metrics = Metrics(args.num_classes)
 
     # for words common to dataset vocab and GLOVE, use GLOVE vectors

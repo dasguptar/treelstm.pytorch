@@ -24,6 +24,12 @@ The first run takes a few minutes because the GLOVE embeddings for the words in 
 
 This code with `--lr 0.01 --wd 0.0001 --optim adagrad --batchsize 25` gives a Pearson's coefficient of `0.8336` and a MSE of `0.3119`, as opposed to a Pearson's coefficient of `0.8676` and a MSE of `0.2532` in the original paper. The difference might be because of differences in the way the word embeddings are updated.
 
+### Notes
+PyTorch 0.1.12 has support for sparse tensors in both CPU and GPU modes. This means that `nn.Embedding` can now have sparse updates, potentially reducing memory usage. Enable this by the `--sparse` argument, but be warned of two things:
+
+- Sparse training has not been tested by me. The code works, but performance has not been benchmarked for this code.
+- Weight decay does not work with sparse gradients/parameters.
+
 ### Acknowledgements
 Shout-out to [Kai Sheng Tai](https://github.com/kaishengtai/) for the [original LuaTorch implementation](https://github.com/stanfordnlp/treelstm), and to the [Pytorch team](https://github.com/pytorch/pytorch#the-team) for the fun library.
 

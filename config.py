@@ -14,8 +14,11 @@ def parse_args():
                         metavar='LR', help='initial learning rate')
     parser.add_argument('--wd', default=1e-4, type=float,
                         help='weight decay (default: 1e-4)')
-    parser.add_argument('--optim', default='adam',
-                        help='optimizer (default: adam)')
+    parser.add_argument('--sparse', action='store_true',
+                        help='Enable sparsity for embeddings, \
+                              incompatible with weight decay')
+    parser.add_argument('--optim', default='adagrad',
+                        help='optimizer (default: adagrad)')
     parser.add_argument('--seed', default=123, type=int,
                         help='random seed (default: 123)')
     cuda_parser = parser.add_mutually_exclusive_group(required=False)

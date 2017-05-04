@@ -6,14 +6,15 @@ import Constants
 
 # module for childsumtreelstm
 class ChildSumTreeLSTM(nn.Module):
-    def __init__(self, cuda, vocab_size, in_dim, mem_dim):
+    def __init__(self, cuda, vocab_size, in_dim, mem_dim, sparsity):
         super(ChildSumTreeLSTM, self).__init__()
         self.cudaFlag = cuda
         self.in_dim = in_dim
         self.mem_dim = mem_dim
 
         self.emb = nn.Embedding(vocab_size,in_dim,
-                                padding_idx=Constants.PAD)
+                                padding_idx=Constants.PAD,
+                                sparse=sparsity)
 
         self.ix = nn.Linear(self.in_dim,self.mem_dim)
         self.ih = nn.Linear(self.mem_dim,self.mem_dim)
@@ -95,10 +96,10 @@ class Similarity(nn.Module):
 
 # puttinh the whole model together
 class SimilarityTreeLSTM(nn.Module):
-    def __init__(self, cuda, vocab_size, in_dim, mem_dim, hidden_dim, num_classes):
+    def __init__(self, cuda, vocab_size, in_dim, mem_dim, hidden_dim, num_classes, sparsity):
         super(SimilarityTreeLSTM, self).__init__()
         self.cudaFlag = cuda
-        self.childsumtreelstm = ChildSumTreeLSTM(cuda, vocab_size, in_dim, mem_dim)
+        self.childsumtreelstm = ChildSumTreeLSTM(cuda, vocab_size, in_dim, mem_dim, sparsity)
         self.similarity = Similarity(cuda, mem_dim, hidden_dim, num_classes)
 
     def forward(self, ltree, linputs, rtree, rinputs):

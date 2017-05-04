@@ -41,7 +41,7 @@ class Trainer(object):
         self.model.eval()
         loss = 0
         predictions = torch.zeros(len(dataset))
-        indices = torch.range(1,dataset.num_classes)
+        indices = torch.arange(1,dataset.num_classes+1)
         for idx in tqdm(xrange(len(dataset)),desc='Testing epoch  '+str(self.epoch)+''):
             ltree,lsent,rtree,rsent,label = dataset[idx]
             linput, rinput = Var(lsent, volatile=True), Var(rsent, volatile=True)

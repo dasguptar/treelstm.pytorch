@@ -54,7 +54,7 @@ class ChildSumTreeLSTM(nn.Module):
         for idx in xrange(tree.num_children):
             _ = self.forward(tree.children[idx], inputs)
         child_c, child_h = self.get_child_states(tree)
-        tree.state = self.node_forward(embs[tree.idx-1], child_c, child_h)
+        tree.state = self.node_forward(embs[tree.idx], child_c, child_h)
         return tree.state
 
     def get_child_states(self, tree):

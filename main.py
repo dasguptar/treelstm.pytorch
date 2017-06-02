@@ -1,6 +1,6 @@
 from __future__ import print_function
 
-import os, time, argparse
+import os, time, random, argparse
 from tqdm import tqdm
 import numpy
 import torch
@@ -38,8 +38,11 @@ def main():
         exit()
     print(args)
     torch.manual_seed(args.seed)
+    random.seed(args.seed)
+    numpy.random.seed(args.seed)
     if args.cuda:
         torch.cuda.manual_seed(args.seed)
+        torch.backends.cudnn.benchmark = True
     if not os.path.exists(args.save):
         os.makedirs(args.save)
 

@@ -46,7 +46,7 @@ def build_vocab(filenames, vocabfile):
                 tokens = line.rstrip('\n').split(' ')
                 vocab |= set(tokens)
     with open(vocabfile,'w') as f:
-        for token in vocab:
+        for token in sorted(vocab):
             f.write(token+'\n')
 
 # mapping from scalar to vector

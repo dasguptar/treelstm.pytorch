@@ -40,17 +40,21 @@ def main():
     torch.manual_seed(args.seed)
     if args.cuda:
         torch.cuda.manual_seed(args.seed)
+    if not os.path.exists(args.save):
+        os.makedirs(args.save)
 
     train_dir = os.path.join(args.data,'train/')
     dev_dir = os.path.join(args.data,'dev/')
     test_dir = os.path.join(args.data,'test/')
 
     # write unique words from all token files
-    token_files_a = [os.path.join(split,'a.toks') for split in [train_dir,dev_dir,test_dir]]
-    token_files_b = [os.path.join(split,'b.toks') for split in [train_dir,dev_dir,test_dir]]
-    token_files = token_files_a+token_files_b
     sick_vocab_file = os.path.join(args.data,'sick.vocab')
-    build_vocab(token_files, sick_vocab_file)
+    if not os.path.isfile(sick_vocab_file):
+        token_files_a = [os.path.join(split,'a.toks') for split in [train_dir,dev_dir,test_dir]]
+        token_files_b = [os.path.join(split,'b.toks') for split in [train_dir,dev_dir,test_dir]]
+        token_files = token_files_a+token_files_b
+        sick_vocab_file = os.path.join(args.data,'sick.vocab')
+        build_vocab(token_files, sick_vocab_file)
 
     # get vocab object from vocab file previously written
     vocab = Vocab(filename=sick_vocab_file, data=[Constants.PAD_WORD, Constants.UNK_WORD, Constants.BOS_WORD, Constants.EOS_WORD])
@@ -119,23 +123,32 @@ def main():
     model.childsumtreelstm.emb.state_dict()['weight'].copy_(emb)
 
     # create trainer object for training and testing
-    trainer     = Trainer(args, model, criterion, optimizer)
+    trainer = Trainer(args, model, criterion, optimizer)
 
+    best = -float('inf')
     for epoch in range(args.epochs):
         train_loss             = trainer.train(train_dataset)
         train_loss, train_pred = trainer.test(train_dataset)
         dev_loss, dev_pred     = trainer.test(dev_dataset)
         test_loss, test_pred   = trainer.test(test_dataset)
 
-        print('==> Train loss   : %f \t' % train_loss, end="")
-        print('Train Pearson    : %f \t' % metrics.pearson(train_pred,train_dataset.labels), end="")
-        print('Train MSE        : %f \t' % metrics.mse(train_pred,train_dataset.labels), end="\n")
-        print('==> Dev loss     : %f \t' % dev_loss, end="")
-        print('Dev Pearson      : %f \t' % metrics.pearson(dev_pred,dev_dataset.labels), end="")
-        print('Dev MSE          : %f \t' % metrics.mse(dev_pred,dev_dataset.labels), end="\n")
-        print('==> Test loss    : %f \t' % test_loss, end="")
-        print('Test Pearson     : %f \t' % metrics.pearson(test_pred,test_dataset.labels), end="")
-        print('Test MSE         : %f \t' % metrics.mse(test_pred,test_dataset.labels), end="\n")
+        train_pearson = metrics.pearson(train_pred,train_dataset.labels)
+        train_mse = metrics.mse(train_pred,train_dataset.labels)
+        print('==> Train    Loss: {}\tPearson: {}\tMSE: {}'.format(train_loss,train_pearson,train_mse))
+        dev_pearson = metrics.pearson(dev_pred,dev_dataset.labels)
+        dev_mse = metrics.mse(dev_pred,dev_dataset.labels)
+        print('==> Dev      Loss: {}\tPearson: {}\tMSE: {}'.format(dev_loss,dev_pearson,dev_mse))
+        test_pearson = metrics.pearson(test_pred,test_dataset.labels)
+        test_mse = metrics.mse(test_pred,test_dataset.labels)
+        print('==> Test     Loss: {}\tPearson: {}\tMSE: {}'.format(test_loss,test_pearson,test_mse))
+
+        if best < test_pearson:
+            best = test_pearson
+            checkpoint = {'model': trainer.model.state_dict(), 'optim': trainer.optimizer,
+                          'pearson': test_pearson, 'mse': test_mse,
+                          'args': args, 'epoch': epoch }
+            print('==> New optimum found, checkpointing everything now...')
+            torch.save(checkpoint, '%s.pt' % os.path.join(args.save, args.expname+'.pth'))
 
 if __name__ == "__main__":
     main()

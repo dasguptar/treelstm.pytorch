@@ -6,6 +6,10 @@ def parse_args():
                         help='path to dataset')
     parser.add_argument('--glove', default='data/glove/',
                         help='directory with GLOVE embeddings')
+    parser.add_argument('--save', default='checkpoints/',
+                        help='directory to save checkpoints in')
+    parser.add_argument('--expname', type=str, default='test',
+                        help='Name to identify experiment')
     parser.add_argument('--batchsize', default=25, type=int,
                         help='batchsize for optimizer updates')
     parser.add_argument('--epochs', default=15, type=int,

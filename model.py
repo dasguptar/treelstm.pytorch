@@ -29,21 +29,20 @@ class ChildSumTreeLSTM(nn.Module):
         self.uh = nn.Linear(self.mem_dim,self.mem_dim)
 
     def node_forward(self, inputs, child_c, child_h):
-        child_h_sum = F.torch.sum(torch.squeeze(child_h,1),0)
+        child_h_sum = F.torch.sum(torch.squeeze(child_h, 1), 0, keepdim=True)
 
-        i = F.sigmoid(self.ix(inputs)+self.ih(child_h_sum))
-        o = F.sigmoid(self.ox(inputs)+self.oh(child_h_sum))
-        u = F.tanh(self.ux(inputs)+self.uh(child_h_sum))
+        i = F.sigmoid(self.ix(inputs) + self.ih(child_h_sum))
+        o = F.sigmoid(self.ox(inputs) + self.oh(child_h_sum))
+        u = F.tanh(self.ux(inputs) + self.uh(child_h_sum))
 
-        # add extra singleton dimension
-        fx = F.torch.unsqueeze(self.fx(inputs),1)
-        f = F.torch.cat([self.fh(child_hi)+fx for child_hi in child_h], 0)
+        fx = self.fx(inputs)
+        f = F.torch.cat([self.fh(child_hi) + fx for child_hi in child_h], 0)
         f = F.sigmoid(f)
-        # removing extra singleton dimension
-        f = F.torch.unsqueeze(f,1)
-        fc = F.torch.squeeze(F.torch.mul(f,child_c),1)
+        # adding extra singleton dimension
+        f = F.torch.unsqueeze(f, 1)
+        fc = F.torch.squeeze(F.torch.mul(f, child_c), 1)
 
-        c = F.torch.mul(i,u) + F.torch.sum(fc,0)
+        c = F.torch.mul(i, u) + F.torch.sum(fc, 0, keepdim=True)
         h = F.torch.mul(o, F.tanh(c))
 
         return c,h
@@ -61,13 +60,13 @@ class ChildSumTreeLSTM(nn.Module):
         # add extra singleton dimension in middle...
         # because pytorch needs mini batches... :sad:
         if tree.num_children==0:
-            child_c = Var(torch.zeros(1,1,self.mem_dim))
-            child_h = Var(torch.zeros(1,1,self.mem_dim))
+            child_c = Var(torch.zeros(1, 1, self.mem_dim))
+            child_h = Var(torch.zeros(1, 1, self.mem_dim))
             if self.cudaFlag:
                 child_c, child_h = child_c.cuda(), child_h.cuda()
         else:
-            child_c = Var(torch.Tensor(tree.num_children,1,self.mem_dim))
-            child_h = Var(torch.Tensor(tree.num_children,1,self.mem_dim))
+            child_c = Var(torch.Tensor(tree.num_children, 1, self.mem_dim))
+            child_h = Var(torch.Tensor(tree.num_children, 1, self.mem_dim))
             if self.cudaFlag:
                 child_c, child_h = child_c.cuda(), child_h.cuda()
             for idx in xrange(tree.num_children):
@@ -87,7 +86,7 @@ class Similarity(nn.Module):
 
     def forward(self, lvec, rvec):
         mult_dist = F.torch.mul(lvec, rvec)
-        abs_dist = F.torch.abs(F.torch.add(lvec,-rvec))
+        abs_dist = F.torch.abs(F.torch.add(lvec, -rvec))
         vec_dist = F.torch.cat((mult_dist, abs_dist),1)
         out = F.sigmoid(self.wh(vec_dist))
         # out = F.sigmoid(out)

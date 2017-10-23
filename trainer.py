@@ -52,5 +52,6 @@ class Trainer(object):
             output = self.model(ltree,linput,rtree,rinput)
             err = self.criterion(output, target)
             loss += err.data[0]
-            predictions[idx] = torch.dot(indices,torch.exp(output.data.cpu()))
+            output = output.data.squeeze().cpu()
+            predictions[idx] = torch.dot(indices, torch.exp(output))
         return loss/len(dataset), predictions

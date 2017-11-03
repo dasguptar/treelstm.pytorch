@@ -50,7 +50,7 @@ class ChildSumTreeLSTM(nn.Module):
     def forward(self, tree, inputs):
         # add singleton dimension for future call to node_forward
         embs = F.torch.unsqueeze(self.emb(inputs),1)
-        for idx in xrange(tree.num_children):
+        for idx in range(tree.num_children):
             _ = self.forward(tree.children[idx], inputs)
         child_c, child_h = self.get_child_states(tree)
         tree.state = self.node_forward(embs[tree.idx], child_c, child_h)
@@ -69,7 +69,7 @@ class ChildSumTreeLSTM(nn.Module):
             child_h = Var(torch.Tensor(tree.num_children, 1, self.mem_dim))
             if self.cudaFlag:
                 child_c, child_h = child_c.cuda(), child_h.cuda()
-            for idx in xrange(tree.num_children):
+            for idx in range(tree.num_children):
                 child_c[idx], child_h[idx] = tree.children[idx].state
         return child_c, child_h
 

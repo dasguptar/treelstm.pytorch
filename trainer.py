@@ -18,7 +18,7 @@ class Trainer(object):
         self.optimizer.zero_grad()
         loss, k = 0.0, 0
         indices = torch.randperm(len(dataset))
-        for idx in tqdm(xrange(len(dataset)),desc='Training epoch '+str(self.epoch+1)+''):
+        for idx in tqdm(range(len(dataset)),desc='Training epoch '+str(self.epoch+1)+''):
             ltree,lsent,rtree,rsent,label = dataset[indices[idx]]
             linput, rinput = Var(lsent), Var(rsent)
             target = Var(map_label_to_target(label,dataset.num_classes))
@@ -42,7 +42,7 @@ class Trainer(object):
         loss = 0
         predictions = torch.zeros(len(dataset))
         indices = torch.arange(1,dataset.num_classes+1)
-        for idx in tqdm(xrange(len(dataset)),desc='Testing epoch  '+str(self.epoch)+''):
+        for idx in tqdm(range(len(dataset)),desc='Testing epoch  '+str(self.epoch)+''):
             ltree,lsent,rtree,rsent,label = dataset[idx]
             linput, rinput = Var(lsent, volatile=True), Var(rsent, volatile=True)
             target = Var(map_label_to_target(label,dataset.num_classes), volatile=True)

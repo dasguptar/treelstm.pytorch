@@ -14,7 +14,7 @@ class Tree(object):
         if getattr(self,'_size'):
             return self._size
         count = 1
-        for i in xrange(self.num_children):
+        for i in range(self.num_children):
             count += self.children[i].size()
         self._size = count
         return self._size
@@ -24,7 +24,7 @@ class Tree(object):
             return self._depth
         count = 0
         if self.num_children>0:
-            for i in xrange(self.num_children):
+            for i in range(self.num_children):
                 child_depth = self.children[i].depth()
                 if child_depth>count:
                     count = child_depth

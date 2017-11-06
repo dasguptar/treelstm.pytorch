@@ -28,7 +28,7 @@ def load_word_vectors(path):
         for line in f:
             contents = line.rstrip('\n').split(' ')
             words[idx] = contents[0]
-            vectors[idx] = torch.Tensor(map(float, contents[1:]))
+            vectors[idx] = torch.Tensor(list(map(float, contents[1:])))
             idx += 1
     with open(path+'.vocab','w') as f:
         for word in words:

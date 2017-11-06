@@ -1,8 +1,11 @@
+from __future__ import division
 from __future__ import print_function
 
-import os, time, random, argparse
+import os
+import random
+import logging
 from tqdm import tqdm
-import numpy
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -30,16 +33,28 @@ from trainer import Trainer
 def main():
     global args
     args = parse_args()
-    args.input_dim, args.mem_dim = 300, 150
-    args.hidden_dim, args.num_classes = 50, 5
+    # global logger
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    formatter = logging.Formatter("[%(asctime)s] %(levelname)s:%(name)s:%(message)s")
+    # file logger
+    fh = logging.FileHandler(os.path.join(args.save, args.expname)+'.log', mode='w')
+    fh.setLevel(logging.INFO)
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+    # console logger
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    # argument validation
     args.cuda = args.cuda and torch.cuda.is_available()
     if args.sparse and args.wd!=0:
-        print('Sparsity and weight decay are incompatible, pick one!')
+        logger.error('Sparsity and weight decay are incompatible, pick one!')
         exit()
-    print(args)
+    logger.debug(args)
     torch.manual_seed(args.seed)
     random.seed(args.seed)
-    numpy.random.seed(args.seed)
     if args.cuda:
         torch.cuda.manual_seed(args.seed)
         torch.backends.cudnn.benchmark = True
@@ -61,7 +76,7 @@ def main():
 
     # get vocab object from vocab file previously written
     vocab = Vocab(filename=sick_vocab_file, data=[Constants.PAD_WORD, Constants.UNK_WORD, Constants.BOS_WORD, Constants.EOS_WORD])
-    print('==> SICK vocabulary size : %d ' % vocab.size())
+    logger.debug('==> SICK vocabulary size : %d ' % vocab.size())
 
     # load SICK dataset splits
     train_file = os.path.join(args.data,'sick_train.pth')
@@ -70,21 +85,21 @@ def main():
     else:
         train_dataset = SICKDataset(train_dir, vocab, args.num_classes)
         torch.save(train_dataset, train_file)
-    print('==> Size of train data   : %d ' % len(train_dataset))
+    logger.debug('==> Size of train data   : %d ' % len(train_dataset))
     dev_file = os.path.join(args.data,'sick_dev.pth')
     if os.path.isfile(dev_file):
         dev_dataset = torch.load(dev_file)
     else:
         dev_dataset = SICKDataset(dev_dir, vocab, args.num_classes)
         torch.save(dev_dataset, dev_file)
-    print('==> Size of dev data     : %d ' % len(dev_dataset))
+    logger.debug('==> Size of dev data     : %d ' % len(dev_dataset))
     test_file = os.path.join(args.data,'sick_test.pth')
     if os.path.isfile(test_file):
         test_dataset = torch.load(test_file)
     else:
         test_dataset = SICKDataset(test_dir, vocab, args.num_classes)
         torch.save(test_dataset, test_file)
-    print('==> Size of test data    : %d ' % len(test_dataset))
+    logger.debug('==> Size of test data    : %d ' % len(test_dataset))
 
     # initialize model, criterion/loss_function, optimizer
     model = SimilarityTreeLSTM(
@@ -111,7 +126,7 @@ def main():
     else:
         # load glove embeddings and vocab
         glove_vocab, glove_emb = load_word_vectors(os.path.join(args.glove,'glove.840B.300d'))
-        print('==> GLOVE vocabulary size: %d ' % glove_vocab.size())
+        logger.debug('==> GLOVE vocabulary size: %d ' % glove_vocab.size())
         emb = torch.Tensor(vocab.size(),glove_emb.size(1)).normal_(-0.05,0.05)
         # zero out the embeddings for padding and other special words if they are absent in vocab
         for idx, item in enumerate([Constants.PAD_WORD, Constants.UNK_WORD, Constants.BOS_WORD, Constants.EOS_WORD]):
@@ -137,21 +152,21 @@ def main():
 
         train_pearson = metrics.pearson(train_pred,train_dataset.labels)
         train_mse = metrics.mse(train_pred,train_dataset.labels)
-        print('==> Train    Loss: {}\tPearson: {}\tMSE: {}'.format(train_loss,train_pearson,train_mse))
+        logger.info('==> Epoch {}, Train \tLoss: {}\tPearson: {}\tMSE: {}'.format(epoch, train_loss, train_pearson, train_mse))
         dev_pearson = metrics.pearson(dev_pred,dev_dataset.labels)
         dev_mse = metrics.mse(dev_pred,dev_dataset.labels)
-        print('==> Dev      Loss: {}\tPearson: {}\tMSE: {}'.format(dev_loss,dev_pearson,dev_mse))
+        logger.info('==> Epoch {}, Dev \tLoss: {}\tPearson: {}\tMSE: {}'.format(epoch, dev_loss, dev_pearson, dev_mse))
         test_pearson = metrics.pearson(test_pred,test_dataset.labels)
         test_mse = metrics.mse(test_pred,test_dataset.labels)
-        print('==> Test     Loss: {}\tPearson: {}\tMSE: {}'.format(test_loss,test_pearson,test_mse))
+        logger.info('==> Epoch {}, Test \tLoss: {}\tPearson: {}\tMSE: {}'.format(epoch, test_loss, test_pearson, test_mse))
 
         if best < test_pearson:
             best = test_pearson
             checkpoint = {'model': trainer.model.state_dict(), 'optim': trainer.optimizer,
                           'pearson': test_pearson, 'mse': test_mse,
                           'args': args, 'epoch': epoch }
-            print('==> New optimum found, checkpointing everything now...')
-            torch.save(checkpoint, '%s.pt' % os.path.join(args.save, args.expname+'.pth'))
+            logger.debug('==> New optimum found, checkpointing everything now...')
+            torch.save(checkpoint, '%s.pt' % os.path.join(args.save, args.expname))
 
 if __name__ == "__main__":
     main()

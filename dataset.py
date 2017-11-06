@@ -1,11 +1,13 @@
 import os
-from copy import deepcopy
 from tqdm import tqdm
+from copy import deepcopy
+
 import torch
 import torch.utils.data as data
+
+import Constants
 from tree import Tree
 from vocab import Vocab
-import Constants
 
 # Dataset class for SICK dataset
 class SICKDataset(data.Dataset):
@@ -54,7 +56,6 @@ class SICKDataset(data.Dataset):
         trees = dict()
         root = None
         for i in range(1,len(parents)+1):
-            #if not trees[i-1] and parents[i-1]!=-1:
             if i-1 not in trees.keys() and parents[i-1]!=-1:
                 idx = i
                 prev = None
@@ -67,7 +68,6 @@ class SICKDataset(data.Dataset):
                         tree.add_child(prev)
                     trees[idx-1] = tree
                     tree.idx = idx-1
-                    #if trees[parent-1] is not None:
                     if parent-1 in trees.keys():
                         trees[parent-1].add_child(tree)
                         break

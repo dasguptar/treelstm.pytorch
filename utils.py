@@ -1,7 +1,11 @@
+from __future__ import division
 from __future__ import print_function
 
-import os, math
+import os
+import math
+
 import torch
+
 from tree import Tree
 from vocab import Vocab
 

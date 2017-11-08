@@ -7,78 +7,49 @@ import Constants
 
 # module for childsumtreelstm
 class ChildSumTreeLSTM(nn.Module):
-    def __init__(self, cuda, vocab_size, in_dim, mem_dim, sparsity):
+    def __init__(self, in_dim, mem_dim):
         super(ChildSumTreeLSTM, self).__init__()
-        self.cudaFlag = cuda
         self.in_dim = in_dim
         self.mem_dim = mem_dim
-
-        self.emb = nn.Embedding(vocab_size,in_dim,
-                                padding_idx=Constants.PAD,
-                                sparse=sparsity)
-
-        self.ix = nn.Linear(self.in_dim,self.mem_dim)
-        self.ih = nn.Linear(self.mem_dim,self.mem_dim)
-
+        self.ioux = nn.Linear(self.in_dim, 3*self.mem_dim)
+        self.iouh = nn.Linear(self.mem_dim, 3*self.mem_dim)
         self.fx = nn.Linear(self.in_dim,self.mem_dim)
         self.fh = nn.Linear(self.mem_dim,self.mem_dim)
 
-        self.ox = nn.Linear(self.in_dim,self.mem_dim)
-        self.oh = nn.Linear(self.mem_dim,self.mem_dim)
-
-        self.ux = nn.Linear(self.in_dim,self.mem_dim)
-        self.uh = nn.Linear(self.mem_dim,self.mem_dim)
-
     def node_forward(self, inputs, child_c, child_h):
-        child_h_sum = F.torch.sum(torch.squeeze(child_h, 1), 0, keepdim=True)
+        child_h_sum = torch.sum(child_h, dim=0, keepdim=True)
 
-        i = F.sigmoid(self.ix(inputs) + self.ih(child_h_sum))
-        o = F.sigmoid(self.ox(inputs) + self.oh(child_h_sum))
-        u = F.tanh(self.ux(inputs) + self.uh(child_h_sum))
+        iou = self.ioux(inputs) + self.iouh(child_h_sum)
+        i, o, u = torch.split(iou, iou.size(1)//3, dim=1)
+        i, o, u = F.sigmoid(i), F.sigmoid(o), F.tanh(u)
 
-        fx = self.fx(inputs)
-        f = F.torch.cat([self.fh(child_hi) + fx for child_hi in child_h], 0)
-        f = F.sigmoid(f)
-        # adding extra singleton dimension
-        f = F.torch.unsqueeze(f, 1)
-        fc = F.torch.squeeze(F.torch.mul(f, child_c), 1)
+        f = F.sigmoid(
+                self.fh(child_h) +
+                self.fx(inputs).repeat(len(child_h), 1)
+            )
+        fc = torch.mul(f, child_c)
 
-        c = F.torch.mul(i, u) + F.torch.sum(fc, 0, keepdim=True)
-        h = F.torch.mul(o, F.tanh(c))
-
-        return c,h
+        c = torch.mul(i, u) + torch.sum(fc, dim=0, keepdim=True)
+        h = torch.mul(o, F.tanh(c))
+        return c, h
 
     def forward(self, tree, inputs):
-        # add singleton dimension for future call to node_forward
-        embs = F.torch.unsqueeze(self.emb(inputs),1)
-        for idx in range(tree.num_children):
-            _ = self.forward(tree.children[idx], inputs)
-        child_c, child_h = self.get_child_states(tree)
-        tree.state = self.node_forward(embs[tree.idx], child_c, child_h)
-        return tree.state
+        _ = [self.forward(tree.children[idx], inputs) for idx in range(tree.num_children)]
 
-    def get_child_states(self, tree):
-        # add extra singleton dimension in middle...
-        # because pytorch needs mini batches... :sad:
         if tree.num_children==0:
-            child_c = Var(torch.zeros(1, 1, self.mem_dim))
-            child_h = Var(torch.zeros(1, 1, self.mem_dim))
-            if self.cudaFlag:
-                child_c, child_h = child_c.cuda(), child_h.cuda()
+            child_c = Var(inputs[0].data.new(1, self.mem_dim).fill_(0.))
+            child_h = Var(inputs[0].data.new(1, self.mem_dim).fill_(0.))
         else:
-            child_c = Var(torch.Tensor(tree.num_children, 1, self.mem_dim))
-            child_h = Var(torch.Tensor(tree.num_children, 1, self.mem_dim))
-            if self.cudaFlag:
-                child_c, child_h = child_c.cuda(), child_h.cuda()
-            for idx in range(tree.num_children):
-                child_c[idx], child_h[idx] = tree.children[idx].state
-        return child_c, child_h
+            child_c, child_h = zip(* map(lambda x: x.state, tree.children))
+            child_c, child_h = torch.cat(child_c, dim=0), torch.cat(child_h, dim=0)
+
+        tree.state = self.node_forward(inputs[tree.idx], child_c, child_h)
+        return tree.state
 
 # module for distance-angle similarity
 class Similarity(nn.Module):
-    def __init__(self, cuda, mem_dim, hidden_dim, num_classes):
+    def __init__(self, mem_dim, hidden_dim, num_classes):
         super(Similarity, self).__init__()
-        self.cudaFlag = cuda
         self.mem_dim = mem_dim
         self.hidden_dim = hidden_dim
         self.num_classes = num_classes
@@ -86,23 +57,25 @@ class Similarity(nn.Module):
         self.wp = nn.Linear(self.hidden_dim, self.num_classes)
 
     def forward(self, lvec, rvec):
-        mult_dist = F.torch.mul(lvec, rvec)
-        abs_dist = F.torch.abs(F.torch.add(lvec, -rvec))
-        vec_dist = F.torch.cat((mult_dist, abs_dist),1)
+        mult_dist = torch.mul(lvec, rvec)
+        abs_dist = torch.abs(torch.add(lvec, -rvec))
+        vec_dist = torch.cat((mult_dist, abs_dist), 1)
+
         out = F.sigmoid(self.wh(vec_dist))
-        # out = F.sigmoid(out)
         out = F.log_softmax(self.wp(out))
         return out
 
-# puttinh the whole model together
+# putting the whole model together
 class SimilarityTreeLSTM(nn.Module):
-    def __init__(self, cuda, vocab_size, in_dim, mem_dim, hidden_dim, num_classes, sparsity):
+    def __init__(self, vocab_size, in_dim, mem_dim, hidden_dim, num_classes, sparsity):
         super(SimilarityTreeLSTM, self).__init__()
-        self.cudaFlag = cuda
-        self.childsumtreelstm = ChildSumTreeLSTM(cuda, vocab_size, in_dim, mem_dim, sparsity)
-        self.similarity = Similarity(cuda, mem_dim, hidden_dim, num_classes)
+        self.emb = nn.Embedding(vocab_size, in_dim, padding_idx=Constants.PAD, sparse=sparsity)
+        self.childsumtreelstm = ChildSumTreeLSTM(in_dim, mem_dim)
+        self.similarity = Similarity(mem_dim, hidden_dim, num_classes)
 
     def forward(self, ltree, linputs, rtree, rinputs):
+        linputs = self.emb(linputs)
+        rinputs = self.emb(rinputs)
         lstate, lhidden = self.childsumtreelstm(ltree, linputs)
         rstate, rhidden = self.childsumtreelstm(rtree, rinputs)
         output = self.similarity(lstate, rstate)

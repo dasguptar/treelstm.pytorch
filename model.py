@@ -67,9 +67,11 @@ class Similarity(nn.Module):
 
 # putting the whole model together
 class SimilarityTreeLSTM(nn.Module):
-    def __init__(self, vocab_size, in_dim, mem_dim, hidden_dim, num_classes, sparsity):
+    def __init__(self, vocab_size, in_dim, mem_dim, hidden_dim, num_classes, sparsity, freeze):
         super(SimilarityTreeLSTM, self).__init__()
         self.emb = nn.Embedding(vocab_size, in_dim, padding_idx=Constants.PAD, sparse=sparsity)
+        if freeze:
+            self.emb.weight.requires_grad = False
         self.childsumtreelstm = ChildSumTreeLSTM(in_dim, mem_dim)
         self.similarity = Similarity(mem_dim, hidden_dim, num_classes)
 

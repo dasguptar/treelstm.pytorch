@@ -20,6 +20,8 @@ def parse_args():
                         help='Size of classifier MLP')
     parser.add_argument('--num_classes', default=5, type=int,
                         help='Number of classes in dataset')
+    parser.add_argument('--freeze_embed', action='store_true',
+                        help='Freeze word embeddings')
     # training arguments
     parser.add_argument('--epochs', default=15, type=int,
                         help='number of total epochs to run')

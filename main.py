@@ -108,16 +108,17 @@ def main():
                 args.mem_dim,
                 args.hidden_dim,
                 args.num_classes,
-                args.sparse)
+                args.sparse,
+                args.freeze_embed)
     criterion = nn.KLDivLoss()
     if args.cuda:
         model.cuda(), criterion.cuda()
     if args.optim=='adam':
-        optimizer   = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.wd)
+        optimizer   = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, weight_decay=args.wd)
     elif args.optim=='adagrad':
-        optimizer   = optim.Adagrad(model.parameters(), lr=args.lr, weight_decay=args.wd)
+        optimizer   = optim.Adagrad(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, weight_decay=args.wd)
     elif args.optim=='sgd':
-        optimizer   = optim.SGD(model.parameters(), lr=args.lr, weight_decay=args.wd)
+        optimizer   = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, weight_decay=args.wd)
     metrics = Metrics(args.num_classes)
 
     # for words common to dataset vocab and GLOVE, use GLOVE vectors

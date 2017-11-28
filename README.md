@@ -1,5 +1,7 @@
 # Tree-Structured Long Short-Term Memory Networks
-This is a [PyTorch](http://pytorch.org/) implementation of Tree-LSTM as described in the paper [Improved Semantic Representations From Tree-Structured Long Short-Term Memory Networks](http://arxiv.org/abs/1503.00075) by Kai Sheng Tai, Richard Socher, and Christopher Manning. On the semantic similarity task using the SICK dataset, this implementation reaches a Pearson's coefficient of `0.8476` and a MSE of `0.2896`.
+This is a [PyTorch](http://pytorch.org/) implementation of Tree-LSTM as described in the paper [Improved Semantic Representations From Tree-Structured Long Short-Term Memory Networks](http://arxiv.org/abs/1503.00075) by Kai Sheng Tai, Richard Socher, and Christopher Manning. On the semantic similarity task using the SICK dataset, this implementation reaches:
+ - Pearson's coefficient: `0.8492` and MSE: `0.2842` with learning rate of `0.010` and fine-tuned embeddings
+ - Pearson's coefficient: `0.8674` and MSE: `0.2536` with learning rate of `0.025` and frozen embeddings
 
 ### Requirements
 - Python (tested on **2.7.13** and **3.6.3**)
@@ -19,13 +21,17 @@ This is a [PyTorch](http://pytorch.org/) implementation of Tree-LSTM as describe
      - Logs and model checkpoints are saved to the `checkpoints/` directory with the name specified by the command line argument `--expname`.
 
 ### Results
-Using hyperparameters `--lr 0.01 --wd 0.0001 --optim adagrad --batchsize 25` gives a Pearson's coefficient of `0.8476` and a MSE of `0.2896`, as opposed to a Pearson's coefficient of `0.8676` and a MSE of `0.2532` in the original paper. 
-The difference might be because of the way the word embeddings are updated. In the paper, embeddings are updated using plain SGD, separate from the rest of the model, while here the same optimizer updates all the model parameters.
+ - Using hyperparameters `--lr 0.010 --wd 0.0001 --optim adagrad --batchsize 25` gives Pearson's coefficient of `0.8492` and MSE of `0.2842`
+ - Using hyperparameters `--lr 0.025 --wd 0.0001 --optim adagrad --batchsize 25 --freeze_embed` gives Pearson's coefficient of `0.8674` and MSE of `0.2536`
+ - In the original paper, the numbers reported include Pearson's coefficient of `0.8676` and MSE of `0.2532`
+
+Minor differences include the way the gradients are accumulated (normalized by batchsize or not) and embeddings are updated (frozen or fine-tuned).
 
 ### Notes
+ - (**Nov 28, 2017**) Added **frozen embeddings**, closed gap to paper.
  - (**Nov 08, 2017**) Refactored model to get **1.5x - 2x speedup**.
  - (**Oct 23, 2017**) Now works with **PyTorch 0.2.0**.
- - (**May 04, 2017**) Added support for **sparse tensors**. Using the `--sparse` argument will enable sparse gradient updates for `nn.Embedding`, potentially reducing memory usage. 
+ - (**May 04, 2017**) Added support for **sparse tensors**. Using the `--sparse` argument will enable sparse gradient updates for `nn.Embedding`, potentially reducing memory usage.
      - There are a couple of caveats, however, viz. weight decay will not work in conjunction with sparsity, and results from the original paper might not be reproduced using sparse embeddings.
 
 ### Acknowledgements

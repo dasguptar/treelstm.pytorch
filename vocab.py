@@ -10,7 +10,7 @@ class Vocab(object):
 
         if data is not None:
             self.addSpecials(data)
-        if filename  is not None:
+        if filename is not None:
             self.loadFile(filename)
 
     def size(self):

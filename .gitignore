@@ -9,3 +9,4 @@ job.py
 sftp-config.json
 .ftpconfig
 .ftpignore
+.vscode

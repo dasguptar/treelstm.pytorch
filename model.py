@@ -25,9 +25,9 @@ class ChildSumTreeLSTM(nn.Module):
         i, o, u = F.sigmoid(i), F.sigmoid(o), F.tanh(u)
 
         f = F.sigmoid(
-                self.fh(child_h) +
-                self.fx(inputs).repeat(len(child_h), 1)
-            )
+            self.fh(child_h) +
+            self.fx(inputs).repeat(len(child_h), 1)
+        )
         fc = torch.mul(f, child_c)
 
         c = torch.mul(i, u) + torch.sum(fc, dim=0, keepdim=True)
@@ -35,7 +35,8 @@ class ChildSumTreeLSTM(nn.Module):
         return c, h
 
     def forward(self, tree, inputs):
-        _ = [self.forward(tree.children[idx], inputs) for idx in range(tree.num_children)]
+        for idx in range(tree.num_children):
+            self.forward(tree.children[idx], inputs)
 
         if tree.num_children == 0:
             child_c = Var(inputs[0].data.new(1, self.mem_dim).fill_(0.))

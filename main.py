@@ -73,7 +73,9 @@ def main():
         build_vocab(token_files, sick_vocab_file)
 
     # get vocab object from vocab file previously written
-    vocab = Vocab(filename=sick_vocab_file, data=[Constants.PAD_WORD, Constants.UNK_WORD, Constants.BOS_WORD, Constants.EOS_WORD])
+    vocab = Vocab(filename=sick_vocab_file,
+                  data=[Constants.PAD_WORD, Constants.UNK_WORD,
+                        Constants.BOS_WORD, Constants.EOS_WORD])
     logger.debug('==> SICK vocabulary size : %d ' % vocab.size())
 
     # load SICK dataset splits
@@ -101,22 +103,25 @@ def main():
 
     # initialize model, criterion/loss_function, optimizer
     model = SimilarityTreeLSTM(
-                vocab.size(),
-                args.input_dim,
-                args.mem_dim,
-                args.hidden_dim,
-                args.num_classes,
-                args.sparse,
-                args.freeze_embed)
+        vocab.size(),
+        args.input_dim,
+        args.mem_dim,
+        args.hidden_dim,
+        args.num_classes,
+        args.sparse,
+        args.freeze_embed)
     criterion = nn.KLDivLoss()
     if args.cuda:
         model.cuda(), criterion.cuda()
     if args.optim == 'adam':
-        optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, weight_decay=args.wd)
+        optimizer = optim.Adam(filter(lambda p: p.requires_grad,
+                                      model.parameters()), lr=args.lr, weight_decay=args.wd)
     elif args.optim == 'adagrad':
-        optimizer = optim.Adagrad(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, weight_decay=args.wd)
+        optimizer = optim.Adagrad(filter(lambda p: p.requires_grad,
+                                         model.parameters()), lr=args.lr, weight_decay=args.wd)
     elif args.optim == 'sgd':
-        optimizer = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, weight_decay=args.wd)
+        optimizer = optim.SGD(filter(lambda p: p.requires_grad,
+                                     model.parameters()), lr=args.lr, weight_decay=args.wd)
     metrics = Metrics(args.num_classes)
 
     # for words common to dataset vocab and GLOVE, use GLOVE vectors
@@ -130,7 +135,8 @@ def main():
         logger.debug('==> GLOVE vocabulary size: %d ' % glove_vocab.size())
         emb = torch.Tensor(vocab.size(), glove_emb.size(1)).normal_(-0.05, 0.05)
         # zero out the embeddings for padding and other special words if they are absent in vocab
-        for idx, item in enumerate([Constants.PAD_WORD, Constants.UNK_WORD, Constants.BOS_WORD, Constants.EOS_WORD]):
+        for idx, item in enumerate([Constants.PAD_WORD, Constants.UNK_WORD,
+                                    Constants.BOS_WORD, Constants.EOS_WORD]):
             emb[idx].zero_()
         for word in vocab.labelToIdx.keys():
             if glove_vocab.getIndex(word):
@@ -146,29 +152,32 @@ def main():
 
     best = -float('inf')
     for epoch in range(args.epochs):
-        train_loss             = trainer.train(train_dataset)
+        train_loss = trainer.train(train_dataset)
         train_loss, train_pred = trainer.test(train_dataset)
-        dev_loss, dev_pred     = trainer.test(dev_dataset)
-        test_loss, test_pred   = trainer.test(test_dataset)
+        dev_loss, dev_pred = trainer.test(dev_dataset)
+        test_loss, test_pred = trainer.test(test_dataset)
 
         train_pearson = metrics.pearson(train_pred, train_dataset.labels)
         train_mse = metrics.mse(train_pred, train_dataset.labels)
-        logger.info('==> Epoch {}, Train \tLoss: {}\tPearson: {}\tMSE: {}'.format(epoch, train_loss, train_pearson, train_mse))
+        logger.info('==> Epoch {}, Train \tLoss: {}\tPearson: {}\tMSE: {}'.format(
+            epoch, train_loss, train_pearson, train_mse))
         dev_pearson = metrics.pearson(dev_pred, dev_dataset.labels)
         dev_mse = metrics.mse(dev_pred, dev_dataset.labels)
-        logger.info('==> Epoch {}, Dev \tLoss: {}\tPearson: {}\tMSE: {}'.format(epoch, dev_loss, dev_pearson, dev_mse))
+        logger.info('==> Epoch {}, Dev \tLoss: {}\tPearson: {}\tMSE: {}'.format(
+            epoch, dev_loss, dev_pearson, dev_mse))
         test_pearson = metrics.pearson(test_pred, test_dataset.labels)
         test_mse = metrics.mse(test_pred, test_dataset.labels)
-        logger.info('==> Epoch {}, Test \tLoss: {}\tPearson: {}\tMSE: {}'.format(epoch, test_loss, test_pearson, test_mse))
+        logger.info('==> Epoch {}, Test \tLoss: {}\tPearson: {}\tMSE: {}'.format(
+            epoch, test_loss, test_pearson, test_mse))
 
         if best < test_pearson:
             best = test_pearson
             checkpoint = {
-                'model': trainer.model.state_dict(), 
+                'model': trainer.model.state_dict(),
                 'optim': trainer.optimizer,
                 'pearson': test_pearson, 'mse': test_mse,
                 'args': args, 'epoch': epoch
-                }
+            }
             logger.debug('==> New optimum found, checkpointing everything now...')
             torch.save(checkpoint, '%s.pt' % os.path.join(args.save, args.expname))
 

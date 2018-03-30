@@ -54,12 +54,13 @@ def build_vocab(filenames, vocabfile):
         for token in sorted(vocab):
             f.write(token + '\n')
 
+
 # mapping from scalar to vector
-def map_label_to_target(label,num_classes):
-    target = torch.zeros(1,num_classes)
+def map_label_to_target(label, num_classes):
+    target = torch.zeros(1, num_classes)
     ceil = int(math.ceil(label))
     floor = int(math.floor(label))
-    if ceil==floor:
+    if ceil == floor:
         target[0][floor-1] = 1
     else:
         target[0][floor-1] = ceil - label

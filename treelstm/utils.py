@@ -6,7 +6,7 @@ import math
 
 import torch
 
-from vocab import Vocab
+from .vocab import Vocab
 
 
 # loading GLOVE word vectors

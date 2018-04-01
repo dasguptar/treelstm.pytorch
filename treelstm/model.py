@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable as Var
 
-import Constants
+from . import Constants
 
 
 # module for childsumtreelstm
@@ -65,7 +65,7 @@ class Similarity(nn.Module):
         vec_dist = torch.cat((mult_dist, abs_dist), 1)
 
         out = F.sigmoid(self.wh(vec_dist))
-        out = F.log_softmax(self.wp(out))
+        out = F.log_softmax(self.wp(out), dim=1)
         return out
 
 

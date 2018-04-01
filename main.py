@@ -10,21 +10,21 @@ import torch.nn as nn
 import torch.optim as optim
 
 # IMPORT CONSTANTS
-import Constants
+from treelstm import Constants
 # NEURAL NETWORK MODULES/LAYERS
-from model import SimilarityTreeLSTM
+from treelstm import SimilarityTreeLSTM
 # DATA HANDLING CLASSES
-from vocab import Vocab
+from treelstm import Vocab
 # DATASET CLASS FOR SICK DATASET
-from dataset import SICKDataset
+from treelstm import SICKDataset
 # METRICS CLASS FOR EVALUATION
-from metrics import Metrics
+from treelstm import Metrics
 # UTILITY FUNCTIONS
-from utils import load_word_vectors, build_vocab
+from treelstm import utils
+# TRAIN AND TEST HELPER FUNCTIONS
+from treelstm import Trainer
 # CONFIG PARSER
 from config import parse_args
-# TRAIN AND TEST HELPER FUNCTIONS
-from trainer import Trainer
 
 
 # MAIN BLOCK
@@ -70,7 +70,7 @@ def main():
         token_files_a = [os.path.join(split, 'a.toks') for split in [train_dir, dev_dir, test_dir]]
         token_files = token_files_a + token_files_b
         sick_vocab_file = os.path.join(args.data, 'sick.vocab')
-        build_vocab(token_files, sick_vocab_file)
+        utils.build_vocab(token_files, sick_vocab_file)
 
     # get vocab object from vocab file previously written
     vocab = Vocab(filename=sick_vocab_file,
@@ -131,7 +131,8 @@ def main():
         emb = torch.load(emb_file)
     else:
         # load glove embeddings and vocab
-        glove_vocab, glove_emb = load_word_vectors(os.path.join(args.glove, 'glove.840B.300d'))
+        glove_vocab, glove_emb = utils.load_word_vectors(
+            os.path.join(args.glove, 'glove.840B.300d'))
         logger.debug('==> GLOVE vocabulary size: %d ' % glove_vocab.size())
         emb = torch.Tensor(vocab.size(), glove_emb.size(1)).normal_(-0.05, 0.05)
         # zero out the embeddings for padding and other special words if they are absent in vocab

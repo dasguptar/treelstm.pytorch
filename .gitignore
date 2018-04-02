@@ -1,11 +1,7 @@
-data
-logs
-*~
-#*#
-*.class
+checkpoints/
+data/
+lib/*.class
 lib/stanford-parser
 lib/stanford-tagger
-job.py
-sftp-config.json
 .ftpconfig
 .ftpignore

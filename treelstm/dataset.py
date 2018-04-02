@@ -5,8 +5,8 @@ from copy import deepcopy
 import torch
 import torch.utils.data as data
 
-import Constants
-from tree import Tree
+from . import Constants
+from .tree import Tree
 
 
 # Dataset class for SICK dataset

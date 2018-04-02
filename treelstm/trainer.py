@@ -3,7 +3,7 @@ from tqdm import tqdm
 import torch
 from torch.autograd import Variable as Var
 
-from utils import map_label_to_target
+from . import utils
 
 
 class Trainer(object):
@@ -24,7 +24,7 @@ class Trainer(object):
         for idx in tqdm(range(len(dataset)), desc='Training epoch ' + str(self.epoch + 1) + ''):
             ltree, lsent, rtree, rsent, label = dataset[indices[idx]]
             linput, rinput = Var(lsent), Var(rsent)
-            target = Var(map_label_to_target(label, dataset.num_classes))
+            target = Var(utils.map_label_to_target(label, dataset.num_classes))
             if self.args.cuda:
                 linput, rinput = linput.cuda(), rinput.cuda()
                 target = target.cuda()
@@ -47,7 +47,7 @@ class Trainer(object):
         for idx in tqdm(range(len(dataset)), desc='Testing epoch  ' + str(self.epoch) + ''):
             ltree, lsent, rtree, rsent, label = dataset[idx]
             linput, rinput = Var(lsent, volatile=True), Var(rsent, volatile=True)
-            target = Var(map_label_to_target(label, dataset.num_classes), volatile=True)
+            target = Var(utils.map_label_to_target(label, dataset.num_classes), volatile=True)
             if self.args.cuda:
                 linput, rinput = linput.cuda(), rinput.cuda()
                 target = target.cuda()

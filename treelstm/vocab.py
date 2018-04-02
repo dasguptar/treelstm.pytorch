@@ -19,7 +19,7 @@ class Vocab(object):
     # Load entries from a file.
     def loadFile(self, filename):
         idx = 0
-        for line in open(filename):
+        for line in open(filename, 'r', encoding='utf8', errors='ignore'):
             token = line.rstrip('\n')
             self.add(token)
             idx += 1

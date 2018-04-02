@@ -1,0 +1,5 @@
+__pycache__/
+.git/
+checkpoints/
+data/
+lib/

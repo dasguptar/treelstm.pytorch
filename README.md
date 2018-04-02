@@ -1,33 +1,52 @@
+
 # Tree-Structured Long Short-Term Memory Networks
 This is a [PyTorch](http://pytorch.org/) implementation of Tree-LSTM as described in the paper [Improved Semantic Representations From Tree-Structured Long Short-Term Memory Networks](http://arxiv.org/abs/1503.00075) by Kai Sheng Tai, Richard Socher, and Christopher Manning. On the semantic similarity task using the SICK dataset, this implementation reaches:
- - Pearson's coefficient: `0.8492` and MSE: `0.2842` with learning rate of `0.010` and fine-tuned embeddings
- - Pearson's coefficient: `0.8674` and MSE: `0.2536` with learning rate of `0.025` and frozen embeddings
+ - Pearson's coefficient: `0.8492` and MSE: `0.2842` using hyperparameters `--lr 0.010 --wd 0.0001 --optim adagrad --batchsize 25`
+ - Pearson's coefficient: `0.8674` and MSE: `0.2536` using hyperparameters `--lr 0.025 --wd 0.0001 --optim adagrad --batchsize 25 --freeze_embed`
+ - Pearson's coefficient: `0.8676` and MSE: `0.2532` are the numbers reported in the original paper.
+ - Known differences include the way the gradients are accumulated (normalized by batchsize or not).
 
 ### Requirements
-- Python (tested on **2.7.13** and **3.6.3**)
-- [PyTorch](http://pytorch.org/) (tested on **0.1.12** and **0.2.0**)
-- [tqdm](https://github.com/tqdm/tqdm)
+- Python (tested on **3.6.4**, should work on **>=2.7**)
 - Java >= 8 (for Stanford CoreNLP utilities)
+- Other dependencies are in `requirements.txt`
 
 ### Usage
- - First run the script `./fetch_and_preprocess.sh`, which, as the name suggests, does two things:
-     - Fetch data, such as:
-         - [SICK dataset](http://alt.qcri.org/semeval2014/task1/index.php?id=data-and-tools) (semantic relatedness task)
-         - [Glove word vectors](http://nlp.stanford.edu/projects/glove/) (Common Crawl 840B) -- **Warning:** this is a 2GB download!
-         - [Stanford Parser](http://nlp.stanford.edu/software/lex-parser.shtml) and [Stanford POS Tagger](http://nlp.stanford.edu/software/tagger.shtml)
-     - Preprocess data, i.e. generate dependency parses using [Stanford Neural Network Dependency Parser](http://nlp.stanford.edu/software/nndep.shtml).
- - Run `python main.py` to try the Dependency Tree-LSTM from the paper to predict similarity for pairs of sentences on the SICK dataset. For a list of all command-line arguments, have a look at `config.py`.  
-     - The first run takes a few minutes to read and store the GLOVE embeddings for the words in the SICK vocabulary to a cache for future runs. In later runs, only the cache is read in during later runs.
+Before delving into how to run the code, here is a quick overview of the contents:
+ - Use the script `fetch_and_preprocess.sh` to download the [SICK dataset](http://alt.qcri.org/semeval2014/task1/index.php?id=data-and-tools), [Stanford Parser](http://nlp.stanford.edu/software/lex-parser.shtml) and [Stanford POS Tagger](http://nlp.stanford.edu/software/tagger.shtml), and [Glove word vectors](http://nlp.stanford.edu/projects/glove/) (Common Crawl 840) -- **Warning:** this is a 2GB download!), and additionally preprocees the data, i.e. generate dependency parses using [Stanford Neural Network Dependency Parser](http://nlp.stanford.edu/software/nndep.shtml).
+ - `main.py`does the actual heavy lifting of training the model and testing it on the SICK dataset. For a list of all command-line arguments, have a look at `config.py`.
+     - The first run caches GLOVE embeddings for words in the SICK vocabulary. In later runs, only the cache is read in during later runs.
      - Logs and model checkpoints are saved to the `checkpoints/` directory with the name specified by the command line argument `--expname`.
 
-### Results
- - Using hyperparameters `--lr 0.010 --wd 0.0001 --optim adagrad --batchsize 25` gives Pearson's coefficient of `0.8492` and MSE of `0.2842`
- - Using hyperparameters `--lr 0.025 --wd 0.0001 --optim adagrad --batchsize 25 --freeze_embed` gives Pearson's coefficient of `0.8674` and MSE of `0.2536`
- - In the original paper, the numbers reported include Pearson's coefficient of `0.8676` and MSE of `0.2532`
-
-Minor differences include the way the gradients are accumulated (normalized by batchsize or not) and embeddings are updated (frozen or fine-tuned).
+Next, these are the different ways to run the code here to train a TreeLSTM model.
+#### Local Python Environment
+If you have a working Python3 environment, simply run the following sequence of steps:
+```
+- bash fetch_and_preprocess.sh
+- pip install -r requirements.txt
+- python main.py
+```
+#### Pure Docker Environment
+If you want to use a Docker container, simply follow these steps:
+```
+- docker build -t treelstm .
+- docker run -it treelstm bash
+- bash fetch_and_preprocess.sh
+- python main.py
+```
+#### Local Filesystem + Docker Environment
+If you want to use a Docker container, but want to persist data and checkpoints in your local filesystem, simply follow these steps:
+```
+- bash fetch_and_preprocess.sh
+- docker build -t treelstm .
+- docker run -it --mount type=bind,source="$(pwd)",target="/root/treelstm.pytorch" treelstm bash
+- python main.py
+```
+**NOTE**: Setting the environment variable OMP_NUM_THREADS=1 usually gives a speedup on the CPU. Use it like `OMP_NUM_THREADS=1 python main.py`. To run on a GPU, set the CUDA_VISIBLE_DEVICES instead. Usually, CUDA does not give much speedup here, since we are operating at a batchsize of `1`.
 
 ### Notes
+ - (**Apr 02, 2018**) Added Dockerfile
+ - (**Apr 02, 2018**) Now works on **PyTorch 0.3.1** and **Python 3.6**, removed dependency on **Python 2.7**
  - (**Nov 28, 2017**) Added **frozen embeddings**, closed gap to paper.
  - (**Nov 08, 2017**) Refactored model to get **1.5x - 2x speedup**.
  - (**Oct 23, 2017**) Now works with **PyTorch 0.2.0**.

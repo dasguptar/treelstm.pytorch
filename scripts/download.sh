@@ -29,5 +29,6 @@ cd ../
 echo "Downloading GLOVE"
 mkdir -p data/glove/
 cd data/glove/
-# wget -c http://www-nlp.stanford.edu/data/glove.840B.300d.zip
-# unzip glove.840B.300d.zip
+wget -c http://www-nlp.stanford.edu/data/glove.840B.300d.zip
+unzip glove.840B.300d.zip
+rm glove.840B.300d.zip

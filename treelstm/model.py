@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.autograd import Variable as Var
 
 from . import Constants
 
@@ -39,8 +38,8 @@ class ChildSumTreeLSTM(nn.Module):
             self.forward(tree.children[idx], inputs)
 
         if tree.num_children == 0:
-            child_c = Var(inputs[0].data.new(1, self.mem_dim).fill_(0.))
-            child_h = Var(inputs[0].data.new(1, self.mem_dim).fill_(0.))
+            child_c = inputs[0].detach().new(1, self.mem_dim).fill_(0.).requires_grad_()
+            child_h = inputs[0].detach().new(1, self.mem_dim).fill_(0.).requires_grad_()
         else:
             child_c, child_h = zip(* map(lambda x: x.state, tree.children))
             child_c, child_h = torch.cat(child_c, dim=0), torch.cat(child_h, dim=0)

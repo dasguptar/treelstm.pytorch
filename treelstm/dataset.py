@@ -44,7 +44,7 @@ class SICKDataset(data.Dataset):
 
     def read_sentence(self, line):
         indices = self.vocab.convertToIdx(line.split(), Constants.UNK_WORD)
-        return torch.LongTensor(indices)
+        return torch.tensor(indices, dtype=torch.long, device='cpu')
 
     def read_trees(self, filename):
         with open(filename, 'r') as f:
@@ -82,5 +82,5 @@ class SICKDataset(data.Dataset):
     def read_labels(self, filename):
         with open(filename, 'r') as f:
             labels = list(map(lambda x: float(x), f.readlines()))
-            labels = torch.Tensor(labels)
+            labels = torch.tensor(labels, dtype=torch.float, device='cpu')
         return labels

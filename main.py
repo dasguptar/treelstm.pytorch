@@ -47,6 +47,7 @@ def main():
     logger.addHandler(ch)
     # argument validation
     args.cuda = args.cuda and torch.cuda.is_available()
+    device = torch.device("cuda:0" if args.cuda else "cpu")
     if args.sparse and args.wd != 0:
         logger.error('Sparsity and weight decay are incompatible, pick one!')
         exit()
@@ -111,18 +112,6 @@ def main():
         args.sparse,
         args.freeze_embed)
     criterion = nn.KLDivLoss()
-    if args.cuda:
-        model.cuda(), criterion.cuda()
-    if args.optim == 'adam':
-        optimizer = optim.Adam(filter(lambda p: p.requires_grad,
-                                      model.parameters()), lr=args.lr, weight_decay=args.wd)
-    elif args.optim == 'adagrad':
-        optimizer = optim.Adagrad(filter(lambda p: p.requires_grad,
-                                         model.parameters()), lr=args.lr, weight_decay=args.wd)
-    elif args.optim == 'sgd':
-        optimizer = optim.SGD(filter(lambda p: p.requires_grad,
-                                     model.parameters()), lr=args.lr, weight_decay=args.wd)
-    metrics = Metrics(args.num_classes)
 
     # for words common to dataset vocab and GLOVE, use GLOVE vectors
     # for other words in dataset vocab, use random normal vectors
@@ -134,7 +123,8 @@ def main():
         glove_vocab, glove_emb = utils.load_word_vectors(
             os.path.join(args.glove, 'glove.840B.300d'))
         logger.debug('==> GLOVE vocabulary size: %d ' % glove_vocab.size())
-        emb = torch.Tensor(vocab.size(), glove_emb.size(1)).normal_(-0.05, 0.05)
+        emb = torch.zeros(vocab.size(), glove_emb.size(1), dtype=torch.float, device=device)
+        emb.normal_(0, 0.05)
         # zero out the embeddings for padding and other special words if they are absent in vocab
         for idx, item in enumerate([Constants.PAD_WORD, Constants.UNK_WORD,
                                     Constants.BOS_WORD, Constants.EOS_WORD]):
@@ -144,12 +134,22 @@ def main():
                 emb[vocab.getIndex(word)] = glove_emb[glove_vocab.getIndex(word)]
         torch.save(emb, emb_file)
     # plug these into embedding matrix inside model
-    if args.cuda:
-        emb = emb.cuda()
-    model.emb.weight.data.copy_(emb)
+    model.emb.weight.copy_(emb)
+
+    model.to(device), criterion.to(device)
+    if args.optim == 'adam':
+        optimizer = optim.Adam(filter(lambda p: p.requires_grad,
+                                      model.parameters()), lr=args.lr, weight_decay=args.wd)
+    elif args.optim == 'adagrad':
+        optimizer = optim.Adagrad(filter(lambda p: p.requires_grad,
+                                         model.parameters()), lr=args.lr, weight_decay=args.wd)
+    elif args.optim == 'sgd':
+        optimizer = optim.SGD(filter(lambda p: p.requires_grad,
+                                     model.parameters()), lr=args.lr, weight_decay=args.wd)
+    metrics = Metrics(args.num_classes)
 
     # create trainer object for training and testing
-    trainer = Trainer(args, model, criterion, optimizer)
+    trainer = Trainer(args, model, criterion, optimizer, device)
 
     best = -float('inf')
     for epoch in range(args.epochs):

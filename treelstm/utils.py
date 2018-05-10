@@ -26,13 +26,14 @@ def load_word_vectors(path):
         contents = f.readline().rstrip('\n').split(' ')
         dim = len(contents[1:])
     words = [None] * (count)
-    vectors = torch.zeros(count, dim)
+    vectors = torch.zeros(count, dim, dtype=torch.float, device='cpu')
     with open(path + '.txt', 'r', encoding='utf8', errors='ignore') as f:
         idx = 0
         for line in f:
             contents = line.rstrip('\n').split(' ')
             words[idx] = contents[0]
-            vectors[idx] = torch.Tensor(list(map(float, contents[1:])))
+            values = list(map(float, contents[1:]))
+            vectors[idx] = torch.tensor(values, dtype=torch.float, device='cpu')
             idx += 1
     with open(path + '.vocab', 'w', encoding='utf8', errors='ignore') as f:
         for word in words:
@@ -57,12 +58,12 @@ def build_vocab(filenames, vocabfile):
 
 # mapping from scalar to vector
 def map_label_to_target(label, num_classes):
-    target = torch.zeros(1, num_classes)
+    target = torch.zeros(1, num_classes, dtype=torch.float, device='cpu')
     ceil = int(math.ceil(label))
     floor = int(math.floor(label))
     if ceil == floor:
-        target[0][floor-1] = 1
+        target[0, floor-1] = 1
     else:
-        target[0][floor-1] = ceil - label
-        target[0][ceil-1] = label - floor
+        target[0, floor-1] = ceil - label
+        target[0, ceil-1] = label - floor
     return target

@@ -7,9 +7,10 @@ This is a [PyTorch](http://pytorch.org/) implementation of Tree-LSTM as describe
  - Known differences include the way the gradients are accumulated (normalized by batchsize or not).
 
 ### Requirements
-- Python (tested on **3.6.4**, should work on **>=2.7**)
+- Python (tested on **3.6.5**, should work on **>=2.7**)
 - Java >= 8 (for Stanford CoreNLP utilities)
 - Other dependencies are in `requirements.txt`
+Note: Currently works with PyTorch 0.4.0. Switch to the `pytorch-v0.3.1` branch if you want to use PyTorch 0.3.1.
 
 ### Usage
 Before delving into how to run the code, here is a quick overview of the contents:

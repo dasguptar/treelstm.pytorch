@@ -134,7 +134,7 @@ def main():
                 emb[vocab.getIndex(word)] = glove_emb[glove_vocab.getIndex(word)]
         torch.save(emb, emb_file)
     # plug these into embedding matrix inside model
-    model.emb.weight.copy_(emb)
+    model.emb.weight.data.copy_(emb)
 
     model.to(device), criterion.to(device)
     if args.optim == 'adam':

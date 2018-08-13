@@ -5,3 +5,4 @@ lib/stanford-parser
 lib/stanford-tagger
 .ftpconfig
 .ftpignore
+.vscode/
